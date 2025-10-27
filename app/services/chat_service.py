@@ -66,8 +66,10 @@ class ChatService:
         for m in history:
             role = m.get("role")
             content = m.get("text")
-            if not history or history[0].get("role") != MessageRole.SYSTEM.value:
-                provider_msgs.append({"role": MessageRole.SYSTEM.value, "content": "You are a helpful chatbot assistant"})
+            has_system_in_history = any(m.get("role") == MessageRole.SYSTEM.value for m in history)
+            has_system_in_provider = any(msg.get("role") == MessageRole.SYSTEM.value for msg in provider_msgs)
+            if not has_system_in_history and not has_system_in_provider:
+                provider_msgs.insert(0, {"role": MessageRole.SYSTEM.value, "content": "You are a helpful chatbot assistant"})
             provider_msgs.append({"role": role, "content": content})
         if not provider_msgs or provider_msgs[-1].get("content") != text:
             provider_msgs.append({"role": MessageRole.SYSTEM.value, "content": "You are a helpful chatbot assistant"})

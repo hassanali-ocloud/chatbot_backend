@@ -1,3 +1,5 @@
 .env.development
 .env.production
 .env.*
+firebase_development_credentials.json
+firebase_production_credentials.json
