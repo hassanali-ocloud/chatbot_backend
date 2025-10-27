@@ -63,7 +63,7 @@ class ChatService:
         user_msg = await self.msg_repo.create(chat_id, uid, "user", text, client_message_id=clientMessageId)
         history = await self.msg_repo.recent_messages_window(chat_id)
         provider_msgs = []
-        for m in history:
+        for m in history: 
             role = m.get("role")
             content = m.get("text")
             has_system_in_history = any(m.get("role") == MessageRole.SYSTEM.value for m in history)
