@@ -5,5 +5,10 @@ class MessageSendRequest(BaseModel):
     text: str
     clientMessageId: Optional[str] = None
 
+class MessageResponse(BaseModel):
+    assistant: dict
+
 class MessagesListResponse(BaseModel):
     messages: List[dict]
+
+

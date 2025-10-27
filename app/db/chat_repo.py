@@ -26,6 +26,6 @@ class ChatRepo:
         doc = await self._col.find_one({"_id": _id, "user_id": user_id})
         return doc
 
-    async def touch(self, chat_id: str):
+    async def update(self, chat_id: str):
         _id = ObjectId(chat_id)
         await self._col.update_one({"_id": _id}, {"$set": {"last_updated": datetime.now()}})

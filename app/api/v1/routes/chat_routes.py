@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from app.api.deps import db
 from app.schemas.chat import ChatCreateRequest, ChatResponse, ChatListResponse
-from app.schemas.message import MessageSendRequest, MessagesListResponse
+from app.schemas.message import MessageResponse, MessageSendRequest, MessagesListResponse
 from app.services.chat_service import ChatService
 
 router = APIRouter()
@@ -30,7 +30,7 @@ async def send_message(chat_id: str, payload: MessageSendRequest, database = Dep
     service = ChatService(database)
     try:
         res = await service.send_message("demo_userid_0", chat_id, payload.text, payload.clientMessageId)
-        return {"messages": "Successfully Added"}
+        return res
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:

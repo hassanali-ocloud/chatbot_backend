@@ -2,16 +2,24 @@ from typing import List, Dict, Any, Optional
 from app.db.chat_repo import ChatRepo
 from app.db.message_repo import MessageRepo
 from app.config.settings import settings
+from app.config.enums import ProviderType, MessageRole
+from app.providers.ollama_adapter import OllamaAdapter
 from app.utils.logger import get_logger
 from app.utils.errors import NotFoundError, ProviderError
+from app.utils.serializers import to_serializable
 
 logger = get_logger(__name__)
 
 class ChatService:
+    def _get_provider(self):
+        if settings.CHAT_PROVIDER.upper() == ProviderType.OLLAMA.value:
+            return OllamaAdapter()
+    
     def __init__(self, db):
         self.db = db
         self.chat_repo = ChatRepo(db)
         self.msg_repo = MessageRepo(db)
+        self.provider = self._get_provider()
 
     async def create_chat(self, uid: str, title: Optional[str] = None) -> Dict[str, Any]:
         doc = await self.chat_repo.create(uid, title or "New chat")
@@ -46,16 +54,33 @@ class ChatService:
             existing = await self.msg_repo.find_by_client_message_id(chat_id, clientMessageId)
             if existing:
                 msgs = await self.msg_repo.list(chat_id, order="asc")
-                found_assistant = None
                 for m in msgs:
                     if m.get("client_message_id") == clientMessageId:
                         idx = msgs.index(m)
-                        for later in msgs[idx+1:]:
-                            if later.get("role") == "assistant":
-                                found_assistant = later
-                                break
                         break
-                return {"idempotent": True, "assistant": found_assistant, "original": existing}
+                return {"idempotent": True, "original": to_serializable(existing)}
 
         user_msg = await self.msg_repo.create(chat_id, uid, "user", text, client_message_id=clientMessageId)
-        return {"messages": "Successfully created user message", "user_message_id": str(user_msg["_id"])}
+        history = await self.msg_repo.recent_messages_window(chat_id)
+        provider_msgs = []
+        for m in history:
+            role = m.get("role")
+            content = m.get("text")
+            if not history or history[0].get("role") != MessageRole.SYSTEM.value:
+                provider_msgs.append({"role": MessageRole.SYSTEM.value, "content": "You are a helpful chatbot assistant"})
+            provider_msgs.append({"role": role, "content": content})
+        if not provider_msgs or provider_msgs[-1].get("content") != text:
+            provider_msgs.append({"role": MessageRole.SYSTEM.value, "content": "You are a helpful chatbot assistant"})
+            provider_msgs.append({"role": MessageRole.USER.value, "content": text})
+
+        try:
+            provider_result = await self.provider.generate_reply(provider_msgs)
+            assistant_text = provider_result.get("content")
+        except Exception as e:
+            logger.error("provider.generate_reply failed", extra={"err": str(e)})
+            raise ProviderError("Provider call failed")
+
+        assistant_msg = await self.msg_repo.create(chat_id, uid, MessageRole.ASSISTANT.value, assistant_text, client_message_id=None)
+        await self.chat_repo.update(chat_id)
+
+        return {MessageRole.ASSISTANT.value: {"id": str(assistant_msg["_id"]), "role": MessageRole.ASSISTANT.value, "text": assistant_msg["text"], "created_at": assistant_msg["created_at"].isoformat()},}
