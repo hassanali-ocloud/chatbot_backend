@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     FRONTEND_URL_2: str
     OLLAMA_API_KEY: str
     CHAT_PROVIDER: str
-    OLLAMA_CHAT_URL: str
+    OLLAMA_CHAT_URL: str 
 
     class Config:
         env_file = env_file
