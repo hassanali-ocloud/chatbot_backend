@@ -1,6 +1,7 @@
 import httpx
 from typing import List, Dict, Any
 from app.config.settings import settings
+from app.providers.types.provider_types import ProviderResponseModel
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -11,7 +12,7 @@ class OllamaAdapter:
         if not self.api_key:
             logger.info("Ollama API key not set; OllamaAdapter created but will error on calls")
 
-    async def generate_reply(self, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def generate_reply(self, messages: List[Dict[str, Any]]) -> ProviderResponseModel:
         if not self.api_key:
             return {"content": "Ollama key missing"}
 
@@ -28,7 +29,7 @@ class OllamaAdapter:
                 resp.raise_for_status()
                 data = resp.json()
                 content = data["message"]["content"]
-                return {"content": content}
+                return ProviderResponseModel(content=content)
             except httpx.RequestError as e:
                 logger.error("Ollama request failed", extra={"err": str(e)})
                 raise

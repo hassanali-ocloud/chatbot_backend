@@ -6,9 +6,14 @@ class MessageSendRequest(BaseModel):
     clientMessageId: Optional[str] = None
 
 class MessageResponse(BaseModel):
-    assistant: dict
+    id: str
+    chat_id: str
+    user_id: str
+    role: str
+    text: str
+    created_at: str
 
 class MessagesListResponse(BaseModel):
-    messages: List[dict]
+    messages: List[MessageResponse]
 
 

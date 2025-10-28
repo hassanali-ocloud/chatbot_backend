@@ -4,8 +4,8 @@ from bson import ObjectId
 from pydantic import BaseModel
 
 class ChatDBModel(BaseModel):
-    id: Optional[str] = None
+    _id: Optional[str] = None
     user_id: str
     title: str
-    created_at: str
-    last_updated: str
+    created_at: datetime
+    last_updated: datetime
