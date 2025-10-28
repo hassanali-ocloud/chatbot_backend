@@ -1,22 +1,24 @@
 from typing import Any, Dict, List
 from bson import ObjectId
 from datetime import datetime
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from app.db.models.chat_db_models import ChatDBModel
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 class ChatRepo:
-    def __init__(self, db):
+    def __init__(self, db: AsyncIOMotorDatabase):
         self._col = db.get_collection("chats")
 
-    async def create(self, user_id: str, title: str) -> Dict[str, Any]:
+    async def create(self, user_id: str, title: str) -> dict[str, Any]:
         now = datetime.now()
-        doc = {"user_id": user_id, "title": title, "created_at": now, "last_updated": now}
+        doc = {"user_id": user_id, "title": title or "New chat", "created_at": now, "last_updated": now}
         res = await self._col.insert_one(doc)
         doc["_id"] = res.inserted_id
         return doc
 
-    async def list(self, user_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+    async def list(self, user_id: str, limit: int = 50) -> dict[str, Any]:
         cursor = self._col.find({"user_id": user_id}).sort("last_updated", -1).limit(limit)
         docs = await cursor.to_list(length=limit)
         return docs
@@ -29,3 +31,7 @@ class ChatRepo:
     async def update(self, chat_id: str):
         _id = ObjectId(chat_id)
         await self._col.update_one({"_id": _id}, {"$set": {"last_updated": datetime.now()}})
+
+    async def delete(self, chat_id: str) -> bool:
+        result = await self._col.delete_one({"_id": ObjectId(chat_id)})
+        return result.deleted_count > 0

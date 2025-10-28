@@ -2,11 +2,12 @@ from typing import Any, Dict, List
 from datetime import datetime
 from bson import ObjectId
 from app.utils.logger import get_logger
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 logger = get_logger(__name__)
 
 class MessageRepo:
-    def __init__(self, db):
+    def __init__(self, db: AsyncIOMotorDatabase):
         self._col = db.get_collection("messages")
 
     async def create(self, chat_id: str, user_id: str, role: str, text: str, client_message_id: str | None = None):
@@ -44,3 +45,7 @@ class MessageRepo:
         cursor = self._col.find({"chat_id": oid}).sort("created_at", -1)
         docs = await cursor.to_list(length=None)
         return list(reversed(docs))
+    
+    async def delete(self, chat_id: str) -> bool:
+        result = await self._col.delete_many({"chat_id": ObjectId(chat_id)})
+        return result.deleted_count > 0

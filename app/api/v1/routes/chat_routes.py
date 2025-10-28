@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from app.api.deps import get_uid, db
 from app.schemas.chat import ChatCreateRequest, ChatResponse, ChatListResponse
-from app.schemas.message import MessageResponse, MessageSendRequest, MessagesListResponse
+from app.schemas.message import MessageSendRequest, MessagesListResponse
 from app.services.chat_service import ChatService
 
 router = APIRouter()
@@ -35,3 +35,11 @@ async def send_message(chat_id: str, payload: MessageSendRequest, uid: str = Dep
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    
+@router.delete("/chats/{chat_id}")
+async def delete_chat(chat_id: str, uid: str = Depends(get_uid), database = Depends(db)):
+    service = ChatService(database)
+    status = await service.delete_chat(chat_id)
+    if not status:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
+    return {"status": "deleted"}

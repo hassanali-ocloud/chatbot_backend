@@ -1,8 +1,10 @@
+from datetime import datetime
 from typing import List, Dict, Any, Optional
 from app.db.chat_repo import ChatRepo
 from app.db.message_repo import MessageRepo
 from app.config.settings import settings
 from app.config.enums import ProviderType, MessageRole
+from app.db.models.chat_db_models import ChatDBModel
 from app.providers.ollama_adapter import OllamaAdapter
 from app.utils.logger import get_logger
 from app.utils.errors import NotFoundError, ProviderError
@@ -21,7 +23,7 @@ class ChatService:
         self.msg_repo = MessageRepo(db)
         self.provider = self._get_provider()
 
-    async def create_chat(self, uid: str, title: Optional[str] = None) -> Dict[str, Any]:
+    async def create_chat(self, uid: str, title: Optional[str] = None) -> dict[str, Any]:
         doc = await self.chat_repo.create(uid, title or "New chat")
         doc["id"] = str(doc["_id"])
         return {"id": doc["id"], "title": doc["title"], "created_at": doc["created_at"].isoformat(), "last_updated": doc["last_updated"].isoformat()}
@@ -30,11 +32,19 @@ class ChatService:
         docs = await self.chat_repo.list(uid)
         out = []
         for d in docs:
+            created_at = d.get("created_at")
+            last_updated = d.get("last_updated")
+
+            if isinstance(created_at, datetime):
+                created_at = created_at.isoformat()
+            if isinstance(last_updated, datetime):
+                last_updated = last_updated.isoformat()
+
             out.append({
                 "id": str(d["_id"]),
                 "title": d.get("title"),
-                "created_at": d.get("created_at").isoformat(),
-                "last_updated": d.get("last_updated").isoformat()
+                "created_at": created_at,
+                "last_updated": last_updated
             })
         return out
 
@@ -86,3 +96,10 @@ class ChatService:
         await self.chat_repo.update(chat_id)
 
         return {MessageRole.ASSISTANT.value: {"id": str(assistant_msg["_id"]), "role": MessageRole.ASSISTANT.value, "text": assistant_msg["text"], "created_at": assistant_msg["created_at"].isoformat()},}
+
+    async def delete_chat(self, chat_id: str) -> Dict[str, Any]:
+        msg_status = await self.msg_repo.delete(chat_id)
+        chat_status = await self.chat_repo.delete(chat_id)
+        if not chat_status:
+            raise NotFoundError("chat not found")
+        return {"status": "deleted"}
