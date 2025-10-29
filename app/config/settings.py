@@ -6,8 +6,8 @@ from io import StringIO
 app_env = os.getenv("APP_ENV")
 env_file = f".env.{app_env}" if app_env else ".env"
 
-if app_env and not os.path.exists(env_file):
-    load_dotenv(stream=StringIO(app_env))
+if app_env:
+    load_dotenv(env_file)
 
 class Settings(BaseSettings):
     MONGO_URI: str
@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     CHAT_PROVIDER: str
     OLLAMA_CHAT_URL: str
     FIREBASE_CREDENTIALS: str
+    LANGCHAIN_TRACING_V2: bool
+    LANGCHAIN_PROJECT: str
+    OPENAI_API_KEY: str
+    LANGCHAIN_API_KEY: str
+    OPENAI_MODEL: str
 
     class Config:
         env_file = env_file

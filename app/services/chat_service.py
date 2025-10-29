@@ -13,6 +13,7 @@ from app.utils.errors import NotFoundError, ProviderError
 from app.utils.serializers import to_serializable
 from app.mappers.chat_mapper import ChatMapper
 from app.mappers.message_mapper import MessageMapper
+from app.providers.openai_adapter import OpenAIAdapter
 
 logger = get_logger(__name__)
 
@@ -20,6 +21,8 @@ class ChatService:
     def _get_provider(self):
         if settings.CHAT_PROVIDER.upper() == ProviderType.OLLAMA.value:
             return OllamaAdapter()
+        elif settings.CHAT_PROVIDER.upper() == ProviderType.OPENAI.value:
+            return OpenAIAdapter()
     
     def __init__(self, db):
         self.db = db
@@ -64,17 +67,18 @@ class ChatService:
 
         await self.msg_repo.create(chat_id, uid, MessageRole.USER.value, text, client_message_id=clientMessageId)
         history = await self.msg_repo.recent_messages_window(chat_id)
-        history_service_model = MessageMapper.DBToDomain.map_list(history)
+        reversed_history = list(reversed(history))
+        history_service_model = MessageMapper.DBToDomain.map_list(reversed_history)
         provider_msgs = []
         for m in history_service_model: 
-            role = m.role
+            role = m.role.value
             content = m.text
-            has_system_in_history = any(m.role == MessageRole.SYSTEM.value for m in history_service_model)
+            has_system_in_history = any(m.role.value == MessageRole.SYSTEM.value for m in history_service_model)
             has_system_in_provider = any(msg.get("role") == MessageRole.SYSTEM.value for msg in provider_msgs)
             if not has_system_in_history and not has_system_in_provider:
                 provider_msgs.insert(0, {"role": MessageRole.SYSTEM.value, "content": SYSTEM_INSTRUCTION})
             provider_msgs.append({"role": role, "content": content})
-        if not provider_msgs or provider_msgs[-1].get("content") != text:
+        if not provider_msgs:
             provider_msgs.append({"role": MessageRole.SYSTEM.value, "content": SYSTEM_INSTRUCTION})
             provider_msgs.append({"role": MessageRole.USER.value, "content": text})
 
