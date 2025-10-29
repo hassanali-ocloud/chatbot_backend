@@ -17,12 +17,12 @@ class Settings(BaseSettings):
     OLLAMA_API_KEY: str
     CHAT_PROVIDER: str
     OLLAMA_CHAT_URL: str
-    FIREBASE_CREDENTIALS: str
     LANGCHAIN_TRACING_V2: bool
     LANGCHAIN_PROJECT: str
     OPENAI_API_KEY: str
     LANGCHAIN_API_KEY: str
     OPENAI_MODEL: str
+    FIREBASE_CREDENTIALS: str
 
     class Config:
         env_file = env_file

@@ -1,3 +1,4 @@
+import json
 import os
 import firebase_admin
 from firebase_admin import credentials, auth
@@ -12,15 +13,15 @@ def _init_firebase():
     global _firebase_initialized
     if _firebase_initialized:
         return
-
-    cred_path = settings.FIREBASE_CREDENTIALS
-    if not cred_path:
+    
+    firebase_creds = json.loads(settings.FIREBASE_CREDENTIALS)
+    if not firebase_creds:
         raise RuntimeError("FIREBASE_CREDENTIALS env var not set")
-    cred = credentials.Certificate(cred_path)
+    cred = credentials.Certificate(firebase_creds)
     try:
         firebase_admin.initialize_app(cred)
         _firebase_initialized = True
-        logger.info("Initialized Firebase Admin with service account", extra={"cred_path": cred_path})
+        logger.info("Initialized Firebase Admin with service account", extra={"cred_path": firebase_creds})
     except Exception as e:
         logger.error("Failed to init firebase admin SDK", extra={"err": str(e)})
         raise
