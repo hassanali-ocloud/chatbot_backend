@@ -79,6 +79,21 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+
+        # CORS headers
+        add_header Access-Control-Allow-Origin "https://chatbot-frontend-beryl.vercel.app" always;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Authorization, Content-Type, X-Requested-With" always;
+
+        # Handle preflight OPTIONS requests
+        if (\$request_method = OPTIONS) {
+            add_header Access-Control-Allow-Origin "https://chatbot-frontend-beryl.vercel.app" always;
+            add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "Authorization, Content-Type, X-Requested-With" always;
+            add_header Content-Length 0;
+            add_header Content-Type text/plain;
+            return 204;
+        }
     }
 }
 NGINXCONF
@@ -108,4 +123,5 @@ echo "   https://${PUBLIC_IP}"
 
 # --------------------------------------
 # Manual Step: Ensure ports 80 & 443 are open in AWS Security Group
+# Take the ip and add in mongo db atlas ip access list.
 # --------------------------------------
