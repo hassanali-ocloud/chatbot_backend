@@ -3,3 +3,7 @@
 .env.*
 firebase_development_credentials.json
 firebase_production_credentials.json
+.terraform/.terraform
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
